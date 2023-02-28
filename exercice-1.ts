@@ -151,7 +151,7 @@ async function main() {
     console.debug("Exercice 1 : OK")
 
     console.debug("Exercice 1 : Cacher un élément dans une image...")
-    /*const {img, img2} = hideMessage(diplomeImage, mamadouImage, "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod\n" +
+    const {img, img2} = hideMessage(diplomeImage, mamadouImage, "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod\n" +
         "tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,\n" +
         "quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo\n" +
         "consequat.  Duis aute irure dolor in reprehenderit in voluptate velit esse\n" +
@@ -160,7 +160,7 @@ async function main() {
     const out4 = fs.createWriteStream("assets/diplome-message-cache.png");
     await PImage.encodePNGToStream(img, out4);
     const out5 = fs.createWriteStream("assets/diplome-message-cache-diff.png");
-    await PImage.encodePNGToStream(img2, out5);*/
+    await PImage.encodePNGToStream(img2, out5);
     console.debug("Exercice 1 : OK")
 
     console.debug("Exercice 1 : Afficher un texte caché dans une image...");
