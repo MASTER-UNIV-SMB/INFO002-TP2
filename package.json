@@ -1,0 +1,22 @@
+{
+  "name": "INFO002-TP2",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/MASTER-UNIV-SMB/INFO002-TP2.git",
+  "license": "MIT",
+  "dependencies": {
+    "pureimage": "^0.3.17",
+    "qrcode": "^1.5.1"
+  },
+  "scripts": {
+    "start:exercice-1": "npx ts-node exercice-1.ts",
+    "start:exercice-2": "npx ts-node exercice-2.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^18.14.2",
+    "nodemon": "^2.0.20",
+    "ts-node": "^10.9.1",
+    "tsc": "^2.0.4",
+    "typescript": "^4.9.5"
+  }
+}
