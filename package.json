@@ -5,6 +5,8 @@
   "repository": "https://github.com/MASTER-UNIV-SMB/INFO002-TP2.git",
   "license": "MIT",
   "dependencies": {
+    "canvas": "^2.11.0",
+    "crypto-io-utils": "^0.1.2",
     "pureimage": "^0.3.17",
     "qrcode": "^1.5.1"
   },

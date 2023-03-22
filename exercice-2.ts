@@ -1,14 +1,16 @@
 import * as PImage from "pureimage"
 import * as fs from 'fs';
+import {registerFont} from "pureimage";
 import {Bitmap} from "pureimage/types/bitmap";
 import {FontRecord} from "pureimage/types/text";
-const { createCanvas, loadImage, registerFont } = require('canvas');
-import {promisify} from "util";
 import * as crypto from "crypto";
-
-const { readPrivateKey } = require('crypto-io-utils');
+import QRCode from "qrcode";
+import {createCanvas} from "canvas";
 
 const FONT_PATH = __dirname + '/fonts/sans.ttf';
+const FONT_2_PATH = __dirname + '/fonts/mono.ttf';
+const FONT_3_PATH = __dirname + '/fonts/sdiplome.ttf';
+
 const CERT_PRIVATE_CERT = fs.readFileSync(__dirname + '/certs/certificat.pem');
 const CERT_PRIVATE_KEY = fs.readFileSync(__dirname + '/certs/certificat.key');
 
@@ -99,7 +101,9 @@ function showMessage(img: Bitmap, l: any){
 }
 
 
-async function verify(img: Bitmap): Promise<string> {
+async function verify(imgPath: string): Promise<string> {
+    const img = await PImage.decodePNGFromStream(fs.createReadStream(imgPath));
+
     const ciphertext = showMessage(img, 0);
     const enc_session_key = showMessage(img, 3);
     const tag = showMessage(img, 6);
@@ -123,62 +127,144 @@ async function verify(img: Bitmap): Promise<string> {
 }
 
 
-async function main(filename: string, text: string, output: string){
-    const GEN = true;
-    let data = '';
+async function main(filename: string, text: string, output: string) {
+    const font = registerFont(FONT_PATH, 'sans', 400, 'normal', 'normal');
+    const font2 = registerFont(FONT_2_PATH, 'mono', 400, 'normal', 'normal');
+    const font3 = registerFont(FONT_3_PATH, 'sdiplome', 400, 'normal', 'normal');
 
-    if (GEN) {
-        const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
-            modulusLength: 2048,
+    const {publicKey, privateKey} = crypto.generateKeyPairSync('rsa', {
+        modulusLength: 2048,
+    });
+    fs.writeFileSync('private.pem', privateKey.export({type: 'pkcs1', format: 'pem'}));
+    fs.writeFileSync('public.pem', publicKey.export({type: 'spki', format: 'pem'}));
+
+    const session_key = crypto.randomBytes(32);
+    const iv = new Buffer(crypto.randomBytes(12));
+
+    font.load(() => {
+        font2.load(() => {
+            font3.load(async () => {
+                let data = '';
+                data += text + '\n';
+                const img = await PImage.decodePNGFromStream(fs.createReadStream(filename));
+                const img2 = await PImage.decodePNGFromStream(fs.createReadStream(filename));
+
+                const ctx = img.getContext('2d');
+
+                const at = 'Diplôme';
+                text += ' à réussi la formation';
+                ctx.font = '80px sdiplome';
+                // @ts-ignore
+                const {width: w, height: h} = ctx.measureText(at);
+                ctx.fillStyle = '#000000';
+                ctx.fillText(
+                    at,
+                    (img.width / 2) - (w / 2),
+                    (img.height / 2) - h - 40
+                );
+                const at2 = 'master informatique';
+                ctx.font = '34px sdiplome';
+
+                const {width: w2} = ctx.measureText(at2);
+                ctx.fillStyle = '#000000';
+                ctx.fillText(
+                    at2,
+                    (img.width / 2) - (w2 / 2),
+                    img.height / 2
+                );
+
+                let mention = '';
+                mention += (Math.random() * (20.00 - 15.00) + 15.00).toFixed(2);
+                data += at2 + '\n' + mention + '\nNIHCAMCURT';
+                console.log(data);
+                const at3 = 'avec une moyenne de ' + mention + '/20';
+                ctx.font = '34px sdiplome';
+                // @ts-ignore
+                const {width: w3, height: h3} = ctx.measureText(at3);
+                ctx.fillStyle = '#000000';
+                ctx.fillText(
+                    at3,
+                    (img.width / 2) - (w3 / 2),
+                    (img.height / 2) + h3 + 40
+                );
+
+                // QRCode
+                const qrCodeCanvas = createCanvas(80, 80);
+                QRCode.toCanvas(
+                    qrCodeCanvas,
+                    data,
+                    {
+                        margin: 0,
+                        color: {
+                            dark: "#000000",
+                            light: "#ffffff",
+                        },
+                    }
+                );
+                const qrCodeImg = await PImage.decodePNGFromStream(qrCodeCanvas.createPNGStream());
+                ctx.drawImage(qrCodeImg, 0, 0, 132, 132, 20, 20, 70, 70);
+
+                // -------
+                var encrypted = crypto.publicEncrypt(publicKey, session_key);
+
+                const tab = encrypted.toString('hex').match(/.{2}/g);
+                const t = [];
+                for (let i = 0; i < tab.length; i += 8) {
+                    t.push(tab.slice(i, i + 8).join(''));
+                }
+
+                ctx.fillStyle = 'black';
+                ctx.font = '15px mono';
+                const x = img.width / 2;
+                // @ts-ignore
+                const y = img.height / 2 - 4 * (ctx.measureText('M').height);
+                for (let i = 0; i < t.length; i++) {
+                    const w = ctx.measureText(t[i]).width;
+                    // @ts-ignore
+                    const h = ctx.measureText('M').height;
+                    ctx.fillText(t[i], x - w / 2, y + i * h - h / 2);
+                }
+
+                ctx.fillStyle = 'black';
+                ctx.font = '20px mono';
+                // @ts-ignore
+                ctx.fillText(iv.toString('hex'), x - ctx.measureText(iv.toString('hex')).width / 2, y + 4 * ctx.measureText('M').height - ctx.measureText('M').height / 2);
+
+                const cipher = crypto.createCipheriv('aes-256-gcm', session_key, iv);
+                const ciphertext = Buffer.concat([cipher.update(data, 'utf-8'), cipher.final()]);
+                const tag = cipher.getAuthTag();
+
+                hideMessage(img, 0, ciphertext);
+                hideMessage(img, 3, session_key);
+                hideMessage(img, 6, tag);
+                hideMessage(img, 9, iv);
+
+                for (let x = 0; x < img.width; x++) {
+                    for (let y = 0; y < img.height; y++) {
+                        const pixel1 = img.getPixelRGBA(x, y);
+                        const pixel2 = img2.getPixelRGBA(x, y);
+
+                        if (pixel1 !== pixel2) {
+                            img2.setPixelRGBA(x, y, 0xff0000ff);
+                        }
+                    }
+                }
+
+                PImage.encodePNGToStream(img, fs.createWriteStream(output)).then(()=>{
+                    console.log("Image écrite vers : ", output)
+                    PImage.encodePNGToStream(img2, fs.createWriteStream("assets/diplome-exercice-2-diff.png")).then(()=>{
+                        console.log("Image diff écrite vers : ", output)
+                        test();
+                    })
+                })
+
+            });
         });
-        fs.writeFileSync('private.pem', privateKey.export());
-        fs.writeFileSync('public.pem', publicKey.export());
-    }
-
-    data += text + '\n';
-    const img = await PImage.decodePNGFromStream(fs.createReadStream(filename));
-    const canvas = createCanvas(img.width, img.height);
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0);
-    const at = 'Diplôme';
-    text += ' à réussi la formation';
-    registerFont(FONT_PATH, { family: 'sans' });
-    ctx.font = '80px sans';
-    const { width: w, height: h } = ctx.measureText(at);
-    ctx.fillStyle = '#000';
-    ctx.fillText(
-        at,
-        (img.width / 2) - (w / 2),
-        (img.height / 2) - h - 40
-    );
-    const at2 = 'master informatique';
-    ctx.font = '34px sans';
-
-    const { width: w2, height: h2 } = ctx.measureText(at2);
-    ctx.fillStyle = '#EEE';
-    ctx.fillText(
-        at2,
-        (img.width / 2) - (w2 / 2),
-        img.height / 2
-    );
-
-    let mention = '';
-    mention += (Math.random() * (20.00 - 15.00) + 15.00).toFixed(2);
-    data += at2 + '\n' + mention + '\nNIHCAMCURT';
-    console.log(data);
-    const at3 = 'avec une';
-    ctx.font = '34px sans';
-
-    const { width: w3, height: h3 } = ctx.measureText(at3);
-    ctx.fillStyle = '#EEE';
-    ctx.fillText(
-        at3,
-        (img.width / 2) - (w3 / 2),
-        (img.height / 2) + h3 + 40
-    );
-
-    const buffer = canvas.toBuffer('image/png');
-    fs.writeFileSync(output, buffer);
+    });
 }
 
-main('assets/diplome-BG.png', 'Haris Coliche aka Chef', 'assets/diplome-exercice-2.png');
+function test(){
+    verify("assets/diplome-exercice-2.png");
+}
+
+main("assets/diplome-exercice-2.png", "Haris Coliche","assets/diplome-exercice-2-diff.png");
