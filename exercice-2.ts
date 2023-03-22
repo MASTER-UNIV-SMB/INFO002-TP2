@@ -153,14 +153,14 @@ async function main(filename: string, text: string, output: string) {
 
                 const at = 'Diplôme';
                 text += ' à réussi la formation';
+                ctx.fillStyle = '#000000';
                 ctx.font = '80px sdiplome';
-                // @ts-ignore
-                const {width: w, height: h} = ctx.measureText(at);
+                const {width: w} = ctx.measureText(at);
                 ctx.fillStyle = '#000000';
                 ctx.fillText(
                     at,
                     (img.width / 2) - (w / 2),
-                    (img.height / 2) - h - 40
+                    (img.height / 2) - 40
                 );
                 const at2 = 'master informatique';
                 ctx.font = '34px sdiplome';
@@ -173,19 +173,26 @@ async function main(filename: string, text: string, output: string) {
                     img.height / 2
                 );
 
+                const {width: w10} = ctx.measureText(text);
+                ctx.fillStyle = '#000000';
+                ctx.fillText(
+                    text,
+                    (img.width / 2) - (w10 / 2),
+                    img.height / 2 + 50
+                );
+
                 let mention = '';
                 mention += (Math.random() * (20.00 - 15.00) + 15.00).toFixed(2);
                 data += at2 + '\n' + mention + '\nNIHCAMCURT';
                 console.log(data);
                 const at3 = 'avec une moyenne de ' + mention + '/20';
-                ctx.font = '34px sdiplome';
-                // @ts-ignore
-                const {width: w3, height: h3} = ctx.measureText(at3);
+                ctx.font = '17px mono';
+                const {width: w12} = ctx.measureText(at3);
                 ctx.fillStyle = '#000000';
                 ctx.fillText(
                     at3,
-                    (img.width / 2) - (w3 / 2),
-                    (img.height / 2) + h3 + 40
+                    (img.width / 2) - (w12 / 2),
+                    (img.height / 2) + 80
                 );
 
                 // QRCode
@@ -267,4 +274,4 @@ function test(){
     verify("assets/diplome-exercice-2.png");
 }
 
-main("assets/diplome-exercice-2.png", "Haris Coliche","assets/diplome-exercice-2-diff.png");
+main("assets/diplome-BG.png", "Haris Coliche","assets/diplome-exercice-2.png");
