@@ -135,8 +135,8 @@ async function main(filename: string, text: string, output: string) {
     const {publicKey, privateKey} = crypto.generateKeyPairSync('rsa', {
         modulusLength: 2048,
     });
-    fs.writeFileSync('private.pem', privateKey.export({type: 'pkcs1', format: 'pem'}));
-    fs.writeFileSync('public.pem', publicKey.export({type: 'spki', format: 'pem'}));
+    fs.writeFileSync('certs/private.pem', privateKey.export({type: 'pkcs1', format: 'pem'}));
+    fs.writeFileSync('certs/public.pem', publicKey.export({type: 'spki', format: 'pem'}));
 
     const session_key = crypto.randomBytes(32);
     const iv = new Buffer(crypto.randomBytes(12));
