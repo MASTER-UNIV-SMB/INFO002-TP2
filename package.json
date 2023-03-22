@@ -10,7 +10,7 @@
   },
   "scripts": {
     "start:exercice-1": "npx ts-node exercice-1.ts",
-    "start:exercice-2": "npx ts-node exercice-2.ts"
+    "start:exercice-2": "npx ts-node -T exercice-2.ts"
   },
   "devDependencies": {
     "@types/node": "^18.14.2",
